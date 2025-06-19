@@ -1,0 +1,3 @@
+Hello!
+Welcome to resume generator. 
+This application is under development.

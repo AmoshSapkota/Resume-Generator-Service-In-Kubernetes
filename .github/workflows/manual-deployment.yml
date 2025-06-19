@@ -1,0 +1,190 @@
+name: Manual Deployment to Environments
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      image_tag:
+        description: 'Docker image tag to deploy (e.g., main-abc123, develop-def456, or latest)'
+        required: true
+        type: string
+      deploy_infrastructure:
+        description: 'Deploy infrastructure with Terraform'
+        required: false
+        type: boolean
+        default: false
+      deploy_application:
+        description: 'Deploy application to Kubernetes'
+        required: true
+        type: boolean
+        default: true
+
+env:
+  AZURE_CONTAINER_REGISTRY: "resumeserviceacr"
+  CONTAINER_NAME: "resume-service"
+  RESOURCE_GROUP: "resume-service-rg"
+  CLUSTER_NAME: "resume-service-aks"
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    if: inputs.deploy_infrastructure == true
+    environment: ${{ inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+        
+    - name: Terraform Init
+      working-directory: ./infra/Terraform
+      run: terraform init
+      
+    - name: Terraform Plan
+      working-directory: ./infra/Terraform
+      run: terraform plan -var="environment=${{ inputs.environment }}" -out=tfplan
+      
+    - name: Terraform Apply
+      working-directory: ./infra/Terraform
+      run: terraform apply tfplan
+      
+    - name: Upload Terraform State
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-state-${{ inputs.environment }}
+        path: infra/Terraform/terraform.tfstate*
+  deploy-application:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    if: inputs.deploy_application == true && (success() || inputs.deploy_infrastructure == false)
+    environment: ${{ inputs.environment }}
+    needs: [deploy-infrastructure]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Set up Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+        
+    - name: Get AKS credentials
+      run: |
+        RESOURCE_GROUP_NAME="${{ env.RESOURCE_GROUP }}-${{ inputs.environment }}"
+        CLUSTER_NAME="${{ env.CLUSTER_NAME }}-${{ inputs.environment }}"
+        az aks get-credentials --resource-group $RESOURCE_GROUP_NAME --name $CLUSTER_NAME --overwrite-existing
+        
+    - name: Verify image exists in ACR
+      run: |
+        ACR_NAME="${{ env.AZURE_CONTAINER_REGISTRY }}${{ inputs.environment }}"
+        az acr repository show --name $ACR_NAME --image ${{ env.CONTAINER_NAME }}:${{ inputs.image_tag }}
+        
+    - name: Update Kubernetes manifests
+      run: |
+        cd k8s/${{ inputs.environment }}
+        
+        # Update image in kustomization.yaml
+        ACR_NAME="${{ env.AZURE_CONTAINER_REGISTRY }}${{ inputs.environment }}"
+        IMAGE_FULL_NAME="${ACR_NAME}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ inputs.image_tag }}"
+        
+        # Use kustomize to set image
+        kustomize edit set image ${{ env.CONTAINER_NAME }}=$IMAGE_FULL_NAME
+        
+        # Verify the kustomization
+        kustomize build . > /tmp/manifests-preview.yaml
+        echo "Generated manifests preview:"
+        head -50 /tmp/manifests-preview.yaml
+        
+    - name: Deploy to AKS
+      run: |
+        cd k8s/${{ inputs.environment }}
+        
+        # Apply manifests
+        kubectl apply -k .
+        
+        # Determine deployment and namespace names
+        if [ "${{ inputs.environment }}" == "prod" ]; then
+          DEPLOYMENT_NAME="prod-resume-service"
+          NAMESPACE="resume-service-prod"
+        else
+          DEPLOYMENT_NAME="resume-service"  
+          NAMESPACE="resume-service"
+        fi
+        
+        # Wait for deployment to complete
+        kubectl rollout status deployment/$DEPLOYMENT_NAME -n $NAMESPACE --timeout=600s
+        
+        # Show deployment status
+        kubectl get pods -n $NAMESPACE
+        kubectl get services -n $NAMESPACE
+        
+    - name: Run deployment verification
+      run: |
+        # Determine namespace
+        if [ "${{ inputs.environment }}" == "prod" ]; then
+          NAMESPACE="resume-service-prod"
+        else
+          NAMESPACE="resume-service"
+        fi
+        
+        # Wait a bit for pods to be ready
+        sleep 30
+        
+        # Check if pods are running
+        kubectl get pods -n $NAMESPACE
+        
+        # Check if service is available
+        kubectl get svc -n $NAMESPACE
+        
+        # Try to get application version/health (if available)
+        echo "Deployment verification completed"
+
+  post-deployment:
+    name: Post Deployment Tasks
+    runs-on: ubuntu-latest
+    needs: [deploy-application]
+    if: always() && needs.deploy-application.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Create deployment summary
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image Tag**: ${{ inputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Infrastructure Deployed**: ${{ inputs.deploy_infrastructure }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Application Deployed**: ${{ inputs.deploy_application }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Notify deployment completion
+      run: |
+        echo "🎉 Deployment to ${{ inputs.environment }} completed successfully!"
+        echo "📦 Deployed image: ${{ env.AZURE_CONTAINER_REGISTRY }}${{ inputs.environment }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ inputs.image_tag }}"

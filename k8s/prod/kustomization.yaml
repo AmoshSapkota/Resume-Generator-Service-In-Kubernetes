@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: resume-service-prod
+
+resources:
+- ../dev
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+images:
+- name: resume-service
+  newName: resumeserviceprodacr.azurecr.io/resume-service
+  newTag: v1.0.0
+
+replicas:
+- name: resume-service
+  count: 5
+
+patchesStrategicMerge:
+- patches/prod-patches.yaml

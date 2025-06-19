@@ -1,0 +1,173 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0, v1.1.0)'
+        required: true
+        type: string
+      environment:
+        description: 'Environment this release is based on'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'prod'
+      image_tag:
+        description: 'Docker image tag to include in release (e.g., main-abc123)'
+        required: true
+        type: string
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        type: string
+        default: 'Automated release from manual workflow'
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    environment: release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Validate version format
+      run: |
+        if [[ ! "${{ inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Invalid version format. Use semantic versioning like v1.0.0"
+          exit 1
+        fi
+        echo "✅ Version format is valid: ${{ inputs.version }}"
+        
+    - name: Check if tag already exists
+      run: |
+        if git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
+          echo "❌ Tag ${{ inputs.version }} already exists"
+          exit 1
+        fi
+        echo "✅ Tag ${{ inputs.version }} is available"
+        
+    - name: Create deployment package
+      run: |
+        mkdir -p release-package
+        
+        # Copy all deployment files
+        cp -r infra/ release-package/
+        cp -r k8s/ release-package/
+        cp -r service/ release-package/
+        cp deploy.ps1 release-package/
+        cp DEPLOYMENT-GUIDE.md release-package/
+        cp CI-CD-README.md release-package/
+        cp README.md release-package/
+        
+        # Create release info file
+        cat > release-package/RELEASE-INFO.md << EOF
+        # Release Information
+        
+        **Version**: ${{ inputs.version }}
+        **Release Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        **Environment**: ${{ inputs.environment }}
+        **Docker Image**: resumeservice${{ inputs.environment }}acr.azurecr.io/resume-service:${{ inputs.image_tag }}
+        **Created By**: ${{ github.actor }}
+        **Commit SHA**: ${{ github.sha }}
+        
+        ## Release Notes
+        ${{ inputs.release_notes }}
+        
+        ## Deployment Instructions
+        
+        1. Extract this release package
+        2. Follow the instructions in DEPLOYMENT-GUIDE.md
+        3. Use the PowerShell script: \`.\deploy.ps1 -All\`
+        4. Or use the manual deployment workflow with image tag: \`${{ inputs.image_tag }}\`
+        
+        ## Docker Image
+        \`\`\`bash
+        docker pull resumeservice${{ inputs.environment }}acr.azurecr.io/resume-service:${{ inputs.image_tag }}
+        \`\`\`
+        EOF
+        
+        # Create archive
+        tar -czf resume-service-${{ inputs.version }}.tar.gz -C release-package .
+        
+    - name: Create Git tag
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+        git push origin "${{ inputs.version }}"
+        
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      id: create_release
+      with:
+        tag_name: ${{ inputs.version }}
+        release_name: Resume Service ${{ inputs.version }}
+        body: |
+          # Resume Service Release ${{ inputs.version }}
+          
+          **Release Date**: $(date -u +"%Y-%m-%d")
+          **Environment**: ${{ inputs.environment }}
+          **Docker Image**: `resumeservice${{ inputs.environment }}acr.azurecr.io/resume-service:${{ inputs.image_tag }}`
+          
+          ## Release Notes
+          ${{ inputs.release_notes }}
+          
+          ## What's Included
+          - ✅ Complete Spring Boot application source code
+          - ✅ Docker configuration with multi-stage build
+          - ✅ Kubernetes manifests for dev and prod environments
+          - ✅ Terraform infrastructure configuration for Azure AKS
+          - ✅ CI/CD pipeline configurations
+          - ✅ Deployment scripts and documentation
+          
+          ## Quick Start
+          1. Download and extract the release package
+          2. Follow the instructions in `DEPLOYMENT-GUIDE.md`
+          3. Use the PowerShell deployment script: `.\deploy.ps1 -All`
+          
+          ## Docker Image
+          ```bash
+          docker pull resumeservice${{ inputs.environment }}acr.azurecr.io/resume-service:${{ inputs.image_tag }}
+          ```
+          
+          ## Deployment
+          Use the manual deployment workflow with:
+          - **Environment**: ${{ inputs.environment }}
+          - **Image Tag**: ${{ inputs.image_tag }}
+          
+          ---
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ inputs.version }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload release package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./resume-service-${{ inputs.version }}.tar.gz
+        asset_name: resume-service-${{ inputs.version }}.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Release summary
+      run: |
+        echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version**: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY  
+        echo "**Docker Image**: resumeservice${{ inputs.environment }}acr.azurecr.io/resume-service:${{ inputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Release URL**: ${{ steps.create_release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "1. 📦 Download the release package from GitHub" >> $GITHUB_STEP_SUMMARY
+        echo "2. 🚀 Use the manual deployment workflow to deploy" >> $GITHUB_STEP_SUMMARY
+        echo "3. ✅ Verify the deployment in your target environment" >> $GITHUB_STEP_SUMMARY

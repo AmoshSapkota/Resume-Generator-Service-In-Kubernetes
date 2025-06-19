@@ -1,0 +1,38 @@
+# Exclude target directory and build artifacts
+target/
+*.jar
+*.war
+*.class
+
+# Exclude IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Exclude OS specific files
+.DS_Store
+Thumbs.db
+
+# Exclude version control
+.git/
+.gitignore
+
+# Exclude Docker files themselves
+Dockerfile
+.dockerignore
+
+# Exclude temporary files
+*.tmp
+*.temp
+*.log
+
+# Exclude test reports
+surefire-reports/
+failsafe-reports/
+
+# Exclude Maven wrapper (if not needed)
+# .mvn/
+# mvnw
+# mvnw.cmd
