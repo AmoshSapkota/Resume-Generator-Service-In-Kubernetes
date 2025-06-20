@@ -15,11 +15,10 @@ variables:
   # Build Configuration
   buildConfiguration: 'Release'
   vmImageName: 'ubuntu-latest'
-  
-  # Azure Container Registry - IMPORTANT: Set ACR_NAME in pipeline variables
+    # Azure Container Registry
   dockerRegistryServiceConnection: 'acr-service-connection'
   imageRepository: 'resume-service'
-  containerRegistry: '$(ACR_NAME).azurecr.io'
+  containerRegistry: 'amoshacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/app_svc/DockerFile'
   tag: '$(Build.BuildId)'
   
@@ -107,14 +106,12 @@ stages:
     pool:
       vmImage: $(vmImageName)
     
-    steps:
-    # Debug: Print registry information
+    steps:    # Debug: Print registry information
     - task: PowerShell@2
       displayName: 'Debug: Print Registry Configuration'
       inputs:
         targetType: 'inline'
         script: |
-          Write-Host "ACR_NAME: $(ACR_NAME)"
           Write-Host "Container Registry: $(containerRegistry)"
           Write-Host "Image Repository: $(imageRepository)"
           Write-Host "Full Image Name: $(fullImageName)"
