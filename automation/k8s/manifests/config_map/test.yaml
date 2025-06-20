@@ -1,0 +1,40 @@
+# ConfigMap for Test environment
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resume-service-config
+  namespace: resume-test
+  labels:
+    app: resume-service
+    environment: test
+data:
+  # Spring Boot Configuration
+  SPRING_PROFILES_ACTIVE: "test,kubernetes"
+  SERVER_PORT: "8080"
+  
+  # Environment-specific settings
+  ENVIRONMENT: "test"
+  LOG_LEVEL: "DEBUG"
+  
+  # Database settings (if needed)
+  DB_HOST: "test-db-host"
+  DB_PORT: "5432"
+  DB_NAME: "resume_service_test"
+  
+  # Application settings
+  APP_NAME: "Resume Service - Test"
+  APP_VERSION: "1.0.0"
+  
+  # Monitoring and observability
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+  
+  # JVM settings for test environment
+  JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+  
+  # External service URLs (test environment)
+  EXTERNAL_API_URL: "https://test-api.example.com"
+  
+  # Feature flags
+  FEATURE_NEW_API: "true"
+  FEATURE_ENHANCED_LOGGING: "true"

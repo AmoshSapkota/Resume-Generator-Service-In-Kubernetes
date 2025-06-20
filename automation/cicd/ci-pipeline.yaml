@@ -1,0 +1,193 @@
+# Azure DevOps CI Pipeline for Spring Boot Application
+# Triggers on push to main branch, builds Docker image, and pushes to ACR
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app_svc/*
+      - automation/k8s/*
+      - automation/iac/*
+
+variables:
+  # Build Configuration
+  buildConfiguration: 'Release'
+  vmImageName: 'ubuntu-latest'
+  
+  # Azure Container Registry
+  dockerRegistryServiceConnection: 'acr-service-connection'
+  imageRepository: 'resume-service'
+  containerRegistry: '$(ACR_NAME).azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/app_svc/DockerFile'
+  tag: '$(Build.BuildId)'
+  
+  # Maven Configuration
+  mavenPomFile: 'app_svc/pom.xml'
+  
+  # Azure DevOps
+  azureSubscription: 'azure-service-connection'
+
+stages:
+- stage: Build
+  displayName: 'Build and Test Application'
+  jobs:
+  - job: Build
+    displayName: 'Build Spring Boot Application'
+    pool:
+      vmImage: $(vmImageName)
+    
+    steps:
+    - task: Maven@3
+      displayName: 'Maven: Validate and Compile'
+      inputs:
+        mavenPomFile: $(mavenPomFile)
+        goals: 'clean compile'
+        options: '-DskipTests=false'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
+
+    - task: Maven@3
+      displayName: 'Maven: Run Unit Tests'
+      inputs:
+        mavenPomFile: $(mavenPomFile)
+        goals: 'test'
+        options: '-DskipTests=false'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
+
+    - task: PublishTestResults@2
+      displayName: 'Publish Test Results'
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/target/surefire-reports/*.xml'
+        failTaskOnFailedTests: true
+        testRunTitle: 'Unit Tests'
+      condition: succeededOrFailed()
+
+    - task: Maven@3
+      displayName: 'Maven: Package Application'
+      inputs:
+        mavenPomFile: $(mavenPomFile)
+        goals: 'package'
+        options: '-DskipTests=true'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.17'
+        mavenVersionOption: 'Default'
+        mavenAuthenticateFeed: false
+        effectivePomSkip: false
+        sonarQubeRunAnalysis: false
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish JAR Artifact'
+      inputs:
+        PathtoPublish: 'app_svc/target'
+        ArtifactName: 'jar-artifact'
+        publishLocation: 'Container'
+
+- stage: DockerBuildPush
+  displayName: 'Build and Push Docker Image'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: Docker
+    displayName: 'Build and Push Docker Image to ACR'
+    pool:
+      vmImage: $(vmImageName)
+    
+    steps:
+    - task: Docker@2
+      displayName: 'Build Docker Image'
+      inputs:
+        command: 'build'
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          latest
+
+    - task: Docker@2
+      displayName: 'Push Docker Image to ACR'
+      inputs:
+        command: 'push'
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
+          latest
+
+    - task: Docker@2
+      displayName: 'Logout from ACR'
+      inputs:
+        command: 'logout'
+        containerRegistry: $(dockerRegistryServiceConnection)
+
+- stage: PublishArtifacts
+  displayName: 'Publish K8s and Terraform Artifacts'
+  dependsOn: DockerBuildPush
+  condition: succeeded()
+  jobs:
+  - job: PublishArtifacts
+    displayName: 'Publish Deployment Artifacts'
+    pool:
+      vmImage: $(vmImageName)
+    
+    steps:
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Kubernetes Manifests'
+      inputs:
+        PathtoPublish: 'automation/k8s'
+        ArtifactName: 'k8s-manifests'
+        publishLocation: 'Container'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Terraform Scripts'
+      inputs:
+        PathtoPublish: 'automation/iac'
+        ArtifactName: 'terraform-scripts'
+        publishLocation: 'Container'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Deployment Information'
+      inputs:
+        PathtoPublish: 'automation/cicd'
+        ArtifactName: 'deployment-info'
+        publishLocation: 'Container'
+
+    # Create deployment info file with image tag
+    - task: PowerShell@2
+      displayName: 'Create Deployment Info'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $deploymentInfo = @{
+            imageTag = "$(tag)"
+            imageName = "$(containerRegistry)/$(imageRepository):$(tag)"
+            buildId = "$(Build.BuildId)"
+            buildNumber = "$(Build.BuildNumber)"
+            sourceVersion = "$(Build.SourceVersion)"
+            buildReason = "$(Build.Reason)"
+            buildDate = Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ"
+          }
+          
+          $deploymentInfo | ConvertTo-Json | Out-File -FilePath "$(Build.ArtifactStagingDirectory)/deployment-info.json" -Encoding UTF8
+          
+          Write-Host "Deployment info created:"
+          Get-Content "$(Build.ArtifactStagingDirectory)/deployment-info.json"
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Deployment Info JSON'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/deployment-info.json'
+        ArtifactName: 'deployment-info-json'
+        publishLocation: 'Container'
