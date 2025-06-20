@@ -27,23 +27,23 @@ output "aks_node_resource_group" {
 
 output "acr_name" {
   description = "Name of the Azure Container Registry"
-  value       = azurerm_container_registry.acr.name
+  value       = data.azurerm_container_registry.existing_acr.name
 }
 
 output "acr_login_server" {
   description = "Login server URL for ACR"
-  value       = azurerm_container_registry.acr.login_server
+  value       = data.azurerm_container_registry.existing_acr.login_server
 }
 
 output "acr_admin_username" {
   description = "Admin username for ACR"
-  value       = azurerm_container_registry.acr.admin_username
+  value       = data.azurerm_container_registry.existing_acr.admin_username
   sensitive   = true
 }
 
 output "acr_admin_password" {
   description = "Admin password for ACR"
-  value       = azurerm_container_registry.acr.admin_password
+  value       = data.azurerm_container_registry.existing_acr.admin_password
   sensitive   = true
 }
 

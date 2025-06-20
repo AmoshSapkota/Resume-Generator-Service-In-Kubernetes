@@ -11,42 +11,48 @@ resource "random_string" "unique_suffix" {
 # Data source for current client configuration
 data "azurerm_client_config" "current" {}
 
-# Azure Container Registry
-resource "azurerm_container_registry" "acr" {
-  name                = "${local.acr_name}${local.unique_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku                 = var.environment == "production" ? "Premium" : "Standard"
-  admin_enabled       = true
+# Azure Container Registry - COMMENTED OUT (using existing manual ACR: amoshacr)
+# resource "azurerm_container_registry" "acr" {
+#   name                = "${local.acr_name}${local.unique_suffix}"
+#   resource_group_name = azurerm_resource_group.main.name
+#   location            = azurerm_resource_group.main.location
+#   sku                 = var.environment == "production" ? "Premium" : "Standard"
+#   admin_enabled       = true
 
-  # Network rules for production
-  dynamic "network_rule_set" {
-    for_each = var.environment == "production" ? [1] : []
-    content {
-      default_action = "Allow"
+#   # Network rules for production
+#   dynamic "network_rule_set" {
+#     for_each = var.environment == "production" ? [1] : []
+#     content {
+#       default_action = "Allow"
       
-      # Add IP rules if specified
-      dynamic "ip_rule" {
-        for_each = var.acr_allowed_ips
-        content {
-          action   = "Allow"
-          ip_range = ip_rule.value
-        }
-      }
-    }
-  }
+#       # Add IP rules if specified
+#       dynamic "ip_rule" {
+#         for_each = var.acr_allowed_ips
+#         content {
+#           action   = "Allow"
+#           ip_range = ip_rule.value
+#         }
+#       }
+#     }
+#   }
 
-  # Enable georeplications for production
-  dynamic "georeplications" {
-    for_each = var.environment == "production" ? var.acr_georeplications : []
-    content {
-      location                = georeplications.value.location
-      zone_redundancy_enabled = georeplications.value.zone_redundancy_enabled
-      tags                    = local.common_tags
-    }
-  }
+#   # Enable georeplications for production
+#   dynamic "georeplications" {
+#     for_each = var.environment == "production" ? var.acr_georeplications : []
+#     content {
+#       location                = georeplications.value.location
+#       zone_redundancy_enabled = georeplications.value.zone_redundancy_enabled
+#       tags                    = local.common_tags
+#     }
+#   }
 
-  tags = local.common_tags
+#   tags = local.common_tags
+# }
+
+# Data source for existing ACR (manually created)
+data "azurerm_container_registry" "existing_acr" {
+  name                = "amoshacr"
+  resource_group_name = azurerm_resource_group.main.name
 }
 
 # Storage account for application data and backups
@@ -162,7 +168,7 @@ resource "azurerm_key_vault_access_policy" "aks_policy" {
 # Store ACR credentials in Key Vault
 resource "azurerm_key_vault_secret" "acr_username" {
   name         = "acr-username"
-  value        = azurerm_container_registry.acr.admin_username
+  value        = data.azurerm_container_registry.existing_acr.admin_username
   key_vault_id = azurerm_key_vault.app_vault.id
   
   depends_on = [azurerm_key_vault_access_policy.current_user]
@@ -170,7 +176,7 @@ resource "azurerm_key_vault_secret" "acr_username" {
 
 resource "azurerm_key_vault_secret" "acr_password" {
   name         = "acr-password"
-  value        = azurerm_container_registry.acr.admin_password
+  value        = data.azurerm_container_registry.existing_acr.admin_password
   key_vault_id = azurerm_key_vault.app_vault.id
   
   depends_on = [azurerm_key_vault_access_policy.current_user]
