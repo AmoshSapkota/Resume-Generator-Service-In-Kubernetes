@@ -106,7 +106,8 @@ stages:
     pool:
       vmImage: $(vmImageName)
     
-    steps:    # Debug: Print registry information
+    steps:
+    # Debug: Print registry information
     - task: PowerShell@2
       displayName: 'Debug: Print Registry Configuration'
       inputs:
@@ -121,7 +122,7 @@ stages:
       displayName: 'Build Docker Image'
       inputs:
         command: 'build'
-        repository: '$(fullImageName)'
+        repository: '$(imageRepository)'
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
@@ -132,7 +133,7 @@ stages:
       displayName: 'Push Docker Image to ACR'
       inputs:
         command: 'push'
-        repository: '$(fullImageName)'
+        repository: '$(imageRepository)'
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
