@@ -16,12 +16,15 @@ variables:
   buildConfiguration: 'Release'
   vmImageName: 'ubuntu-latest'
   
-  # Azure Container Registry
+  # Azure Container Registry - IMPORTANT: Set ACR_NAME in pipeline variables
   dockerRegistryServiceConnection: 'acr-service-connection'
   imageRepository: 'resume-service'
   containerRegistry: '$(ACR_NAME).azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/app_svc/DockerFile'
   tag: '$(Build.BuildId)'
+  
+  # Full image name for Docker operations
+  fullImageName: '$(containerRegistry)/$(imageRepository)'
   
   # Maven Configuration
   mavenPomFile: 'app_svc/pom.xml'
@@ -105,11 +108,23 @@ stages:
       vmImage: $(vmImageName)
     
     steps:
+    # Debug: Print registry information
+    - task: PowerShell@2
+      displayName: 'Debug: Print Registry Configuration'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "ACR_NAME: $(ACR_NAME)"
+          Write-Host "Container Registry: $(containerRegistry)"
+          Write-Host "Image Repository: $(imageRepository)"
+          Write-Host "Full Image Name: $(fullImageName)"
+          Write-Host "Docker Registry Service Connection: $(dockerRegistryServiceConnection)"
+    
     - task: Docker@2
       displayName: 'Build Docker Image'
       inputs:
         command: 'build'
-        repository: $(imageRepository)
+        repository: '$(fullImageName)'
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
@@ -120,7 +135,7 @@ stages:
       displayName: 'Push Docker Image to ACR'
       inputs:
         command: 'push'
-        repository: $(imageRepository)
+        repository: '$(fullImageName)'
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
