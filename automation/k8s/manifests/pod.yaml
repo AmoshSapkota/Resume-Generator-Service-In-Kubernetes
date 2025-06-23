@@ -8,9 +8,9 @@ metadata:
 spec:
   containers:
   - name: resume-service
-    image: nginx:latest
+    image: amoshacr.azurecr.io/resume-service:latest
     ports:
-    - containerPort: 80
+    - containerPort: 8080
       name: http
     resources:
       requests:

@@ -52,7 +52,7 @@ data "azurerm_client_config" "current" {}
 # Data source for existing ACR (manually created)
 data "azurerm_container_registry" "existing_acr" {
   name                = "amoshacr"
-  resource_group_name = azurerm_resource_group.main.name
+  resource_group_name = "Amosh_group"
 }
 
 # Storage account for application data and backups

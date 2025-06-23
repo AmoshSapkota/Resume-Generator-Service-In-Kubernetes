@@ -6,7 +6,7 @@ metadata:
     app: resume-service
     version: v1
 spec:
-  replicas: 2
+  replicas: 3
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: resume-service
-        image: acrresumeservice.azurecr.io/resume-service:latest
+        image: amoshacr.azurecr.io/resume-service:latest
         ports:
         - containerPort: 8080
           name: http
@@ -42,7 +42,7 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /
             port: 8080
           initialDelaySeconds: 60
           periodSeconds: 10
@@ -50,7 +50,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /actuator/health/readiness
+            path: /
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 5
@@ -58,7 +58,7 @@ spec:
           failureThreshold: 3
         startupProbe:
           httpGet:
-            path: /actuator/health
+            path: /
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10

@@ -3,7 +3,7 @@
 variable "resource_group_name" {
   description = "Name of the Azure Resource Group"
   type        = string
-  default     = "rg-resume-service"
+  default     = "Amosh_group"
 }
 
 variable "location" {
@@ -69,11 +69,11 @@ variable "key_vault_name" {
 variable "environment" {
   description = "Environment tag"
   type        = string
-  default     = "Development"
+  default     = "test"
   
   validation {
-    condition     = contains(["test", "production", "Development"], var.environment)
-    error_message = "Environment must be one of: test, production, Development."
+    condition     = contains(["test", "production"], var.environment)
+    error_message = "Environment must be one of: test, production."
   }
 }
 
@@ -105,13 +105,13 @@ variable "subnet_address_prefix" {
 variable "dns_service_ip" {
   description = "DNS service IP address"
   type        = string
-  default     = "10.0.0.10"
+  default     = "10.1.0.10"
 }
 
 variable "service_cidr" {
   description = "Service CIDR for Kubernetes services"
   type        = string
-  default     = "10.0.0.0/24"
+  default     = "10.1.0.0/24"
 }
 
 # Security variables
