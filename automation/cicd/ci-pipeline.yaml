@@ -6,14 +6,14 @@ trigger:
   paths:
     include:
     - app_svc/src/*
-    - app_svc/Dockerfile
+    - app_svc/DockerFile
     - automation/*
 
 variables:
   dockerRegistryServiceConnection: 'acr-service-connection'
   imageRepository: 'resume-service'
   containerRegistry: 'amoshacr.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/app_svc/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/app_svc/DockerFile'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
 
