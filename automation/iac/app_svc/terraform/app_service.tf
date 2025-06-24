@@ -10,3 +10,4 @@ resource "azurerm_kubernetes_cluster" "aks" {
     vm_size    = var.node_vm_size
     max_pods   = 30
   }
+}
