@@ -1,8 +1,8 @@
+# config_map/prod.yaml  
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: resume-service-config
-  namespace: resume-prod
   labels:
     app: resume-service
     environment: production

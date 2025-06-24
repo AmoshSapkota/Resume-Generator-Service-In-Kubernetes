@@ -3,9 +3,7 @@ resource_group_name = "rg-resume-prod"
 aks_cluster_name = "aks-resume-prod"
 node_count = 2
 acr_name = "amoshacr"
-acr_resource_group_name = "rg-resume-shared"
-
-tags = {
-  Environment = "production"
-  Owner = "amosh"
-}
+acr_resource_group_name = "Amosh_group"
+location = "East US"
+node_vm_size = "Standard_B2s"
+project_name = "resume"

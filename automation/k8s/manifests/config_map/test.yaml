@@ -1,8 +1,8 @@
+# config_map/test.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: resume-service-config
-  namespace: resume-test
   labels:
     app: resume-service
     environment: test

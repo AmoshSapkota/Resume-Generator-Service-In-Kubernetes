@@ -1,11 +1,9 @@
 environment = "test"
 resource_group_name = "rg-resume-test"
 aks_cluster_name = "aks-resume-test"
-node_count = 1
+node_count = 2
 acr_name = "amoshacr"
-acr_resource_group_name = "rg-resume-shared"
-
-tags = {
-  Environment = "test"
-  Owner = "amosh"
-}
+acr_resource_group_name = "Amosh_group"
+location = "East US"
+node_vm_size = "Standard_B2s"
+project_name = "resume"
