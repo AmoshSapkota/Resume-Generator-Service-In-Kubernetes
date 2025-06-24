@@ -4,7 +4,6 @@ metadata:
   name: resume-service-rs
   labels:
     app: resume-service
-    tier: backend
 spec:
   replicas: 3
   selector:
@@ -14,14 +13,12 @@ spec:
     metadata:
       labels:
         app: resume-service
-        version: v1
     spec:
       containers:
       - name: resume-service
         image: amoshacr.azurecr.io/resume-service:latest
         ports:
         - containerPort: 8080
-          name: http
         resources:
           requests:
             memory: "256Mi"
@@ -29,15 +26,3 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 5
-          periodSeconds: 5

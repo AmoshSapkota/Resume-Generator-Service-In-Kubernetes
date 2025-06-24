@@ -4,19 +4,9 @@ metadata:
   name: resume-service-pod
   labels:
     app: resume-service
-    version: v1
 spec:
   containers:
   - name: resume-service
     image: amoshacr.azurecr.io/resume-service:latest
     ports:
     - containerPort: 8080
-      name: http
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
-      limits:
-        memory: "512Mi"
-        cpu: "500m"
-  restartPolicy: Always
