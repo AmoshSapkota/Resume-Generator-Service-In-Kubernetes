@@ -21,8 +21,8 @@ stages:
 - stage: Build
   displayName: Build and Push Docker Image
   jobs:
-  - job: Build
-    displayName: Build
+  - job: BuildAndPush
+    displayName: 'Build and Push Docker'
     pool:
       vmImage: $(vmImageName)
     steps:
@@ -37,12 +37,22 @@ stages:
           $(tag)
           latest
 
+  - job: PublishTerraform
+    displayName: 'Publish Terraform'
+    pool:
+      vmImage: $(vmImageName)
+    steps:
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Terraform Artifacts'
       inputs:
         targetPath: '$(Build.SourcesDirectory)/automation/iac'
         artifact: 'terraform-artifacts'
 
+  - job: PublishK8s
+    displayName: 'Publish K8s'
+    pool:
+      vmImage: $(vmImageName)
+    steps:
     - task: PublishPipelineArtifact@1
       displayName: 'Publish K8s Manifests'
       inputs:
