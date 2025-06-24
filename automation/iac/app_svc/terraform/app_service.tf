@@ -10,16 +10,3 @@ resource "azurerm_kubernetes_cluster" "aks" {
     vm_size    = var.node_vm_size
     max_pods   = 30
   }
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  oms_agent {
-    log_analytics_workspace_id = azurerm_log_analytics_workspace.aks.id
-  }
-
-  role_based_access_control_enabled = true
-  
-  tags = local.common_tags
-}
