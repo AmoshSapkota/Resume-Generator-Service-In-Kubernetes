@@ -1,8 +1,9 @@
+name: Resume-Service-CI
+
 trigger:
   branches:
     include:
     - main
-    - develop
   paths:
     include:
     - app_svc/src/*
