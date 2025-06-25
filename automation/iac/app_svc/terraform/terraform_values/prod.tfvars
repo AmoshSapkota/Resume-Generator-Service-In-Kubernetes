@@ -1,7 +1,7 @@
 environment = "prod"
 resource_group_name = "rg-resume-prod"
 aks_cluster_name = "aks-resume-prod"
-node_count = 2
+node_count = 1
 acr_name = "amoshacr"
 acr_resource_group_name = "Amosh_group"
 location = "East US"
