@@ -1,9 +1,12 @@
+# automation/k8s/manifests/service.yaml - ADD namespace
 apiVersion: v1
 kind: Service
 metadata:
   name: resume-service-lb
+  namespace: ${NAMESPACE}              # ← ADD THIS
   labels:
     app: resume-service
+    environment: ${ENVIRONMENT}        # ← ADD THIS
 spec:
   type: LoadBalancer
   selector:

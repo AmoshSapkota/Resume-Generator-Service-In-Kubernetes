@@ -1,11 +1,14 @@
+# automation/k8s/manifests/deployment.yaml - ADD namespace placeholder
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: resume-service-deployment
+  namespace: ${NAMESPACE}              
   labels:
     app: resume-service
+    environment: ${ENVIRONMENT}        
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: resume-service
@@ -13,22 +16,15 @@ spec:
     metadata:
       labels:
         app: resume-service
+        environment: ${ENVIRONMENT}
     spec:
       containers:
       - name: resume-service
         image: amoshacr.azurecr.io/resume-service:latest
         ports:
         - containerPort: 8080
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
+        envFrom:
+        - configMapRef:
+            name: resume-service-config
+      imagePullSecrets:
+      - name: acr-auth

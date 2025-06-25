@@ -1,0 +1,16 @@
+# automation/k8s/manifests/namespaces.yaml (NEW FILE)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+  labels:
+    environment: test
+    project: resume
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    environment: production
+    project: resume

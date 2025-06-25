@@ -1,13 +1,10 @@
-# config_map/test.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: resume-service-config
-  labels:
-    app: resume-service
-    environment: test
-data:
-  SPRING_PROFILES_ACTIVE: "test"
-  ENVIRONMENT: "test"
-  LOG_LEVEL: "DEBUG"
-  APP_NAME: "Resume Service - Test"
+# Keep test.tfvars (for reference/config)
+environment = "test"
+resource_group_name = "rg-resume-test"    # Not used for infrastructure
+aks_cluster_name = "aks-resume-test"      # Not used for infrastructure
+node_count = 1
+acr_name = "amoshacr"
+acr_resource_group_name = "Amosh_group"
+location = "East US"
+node_vm_size = "Standard_B2s"
+project_name = "resume"
