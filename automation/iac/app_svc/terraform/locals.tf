@@ -9,5 +9,4 @@ locals {
     ManagedBy   = "terraform"
   })
   
-  retention_days = var.environment == "prod" ? 90 : 30
 }
