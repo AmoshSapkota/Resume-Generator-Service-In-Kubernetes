@@ -5,5 +5,5 @@ node_count = 1
 acr_name = "amoshacr"
 acr_resource_group_name = "Amosh_group"
 location = "East US"
-node_vm_size = "Standard_B1s"
+node_vm_size = "Standard_B2s"
 project_name = "resume"
