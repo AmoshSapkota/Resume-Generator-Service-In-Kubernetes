@@ -35,7 +35,7 @@ stages:
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
-          $(tag)
+          $(Build.BuildId)
           latest
 
   - job: PublishTerraform
