@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: resume-service
-        image: amoshacr.azurecr.io/resume-service:$Build.BuildId
+        image: amoshacr.azurecr.io/resume-service:${BUILD_ID}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
