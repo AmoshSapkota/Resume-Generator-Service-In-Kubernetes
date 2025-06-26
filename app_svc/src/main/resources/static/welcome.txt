@@ -1,4 +1,4 @@
 Hello!
 Welcome to resume generator. 
 This application is under development.
-Phase 1 completed!!
+Phase 1 tasks completed!!
