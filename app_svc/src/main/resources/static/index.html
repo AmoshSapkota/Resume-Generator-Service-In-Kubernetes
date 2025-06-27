@@ -3,26 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <title>Resume Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            margin-top: 60px;
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        p.description {
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        form {
+            text-align: left;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h2>Welcome to Resume Generator</h2>
-    <form action="/resume.pdf" method="get">
-        <label>Name:</label><br>
-        <input type="text" name="name"><br><br>
 
-        <label>Email:</label><br>
-        <input type="email" name="email"><br><br>
+<div class="container">
+    <h1>Welcome to Resume Generator</h1>
+    <p class="description">
+        The <strong>best AI-powered resume generator</strong> available in the market.<br>
+        Supports all major LLM APIs and creates <strong>well-crafted resumes</strong> that help you land your dream job.<br>
+        Industry-leading <strong>ATS score</strong> and unmatched accuracy.
+    </p>
 
-        <label>Phone:</label><br>
-        <input type="tel" name="phone"><br><br>
+    <form action="/resumeai.pdf" method="get">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name">
 
-        <label>Experience:</label><br>
-        <textarea name="experience" rows="3" cols="30"></textarea><br><br>
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email">
 
-        <label>Education:</label><br>
-        <textarea name="education" rows="3" cols="30"></textarea><br><br>
+        <label for="phone">Phone Number:</label>
+        <input type="tel" name="phone" id="phone">
+
+        <label for="experience">Experience:</label>
+        <textarea name="experience" id="experience" rows="3"></textarea>
+
+        <label for="education">Education:</label>
+        <textarea name="education" id="education" rows="3"></textarea>
 
         <button type="submit">Generate Resume</button>
     </form>
+</div>
+
 </body>
 </html>
