@@ -1,9 +1,8 @@
-# automation/k8s/manifests/config_map/prod.yaml - ADD namespace
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: resume-service-config
-  namespace: prod                      # ← ADD THIS
+  namespace: prod                      
   labels:
     app: resume-service
     environment: production

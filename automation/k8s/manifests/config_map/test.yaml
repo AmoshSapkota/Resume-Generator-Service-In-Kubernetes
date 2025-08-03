@@ -1,4 +1,3 @@
-# automation/k8s/manifests/config_map/test.yaml - ADD namespace
 apiVersion: v1
 kind: ConfigMap
 metadata:
